@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ellectrify · Sleep Companion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#1B2A4A;
+    --bg:#070B14;
+    --teal:#2E7D7B;
+    --teal-bright:#41C7C2;
+    --gold:#B8860B;
+    --gold-soft:#E0B84A;
+    --indigo:#7C93E6;
+    --text:#F2F6FC;
+    --text-dim:#9AA8C4;
+    --text-faint:#5C6B89;
+    --line:rgba(255,255,255,.08);
+    --good:#3FD18A;
+    --glass:rgba(36,52,86,.45);
+    --glass-2:rgba(28,42,72,.55);
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+
+  html,body{height:100%}
+
+  body{
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:var(--bg);
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:40px 16px;
+    color:var(--text);
+    position:relative;
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* Ambient aurora behind the phone */
+  body::before, body::after{
+    content:"";position:fixed;border-radius:50%;filter:blur(90px);z-index:0;pointer-events:none;
+  }
+  body::before{
+    width:520px;height:520px;
+    background:radial-gradient(circle, rgba(65,199,194,.18), transparent 70%);
+    top:-12%;left:50%;transform:translateX(-58%);
+    animation:drift1 14s ease-in-out infinite;
+  }
+  body::after{
+    width:460px;height:460px;
+    background:radial-gradient(circle, rgba(224,184,74,.12), transparent 70%);
+    bottom:-10%;left:50%;transform:translateX(-30%);
+    animation:drift2 18s ease-in-out infinite;
+  }
+  @keyframes drift1{50%{transform:translateX(-42%) translateY(20px)}}
+  @keyframes drift2{50%{transform:translateX(-48%) translateY(-24px)}}
+
+  /* ===== Phone frame ===== */
+  .phone{
+    width:390px;
+    max-width:100%;
+    background:linear-gradient(170deg,#101a30 0%, #0a1120 100%);
+    border-radius:48px;
+    border:1px solid rgba(255,255,255,.07);
+    box-shadow:
+      0 50px 100px -20px rgba(0,0,0,.7),
+      0 0 0 8px rgba(255,255,255,.015),
+      inset 0 1px 0 rgba(255,255,255,.06);
+    overflow:hidden;
+    position:relative;
+    z-index:1;
+    animation:rise .7s cubic-bezier(.2,.7,.2,1) both;
+  }
+  @keyframes rise{from{opacity:0;transform:translateY(24px) scale(.98)}}
+
+  /* dynamic island */
+  .island{
+    position:absolute;top:13px;left:50%;transform:translateX(-50%);
+    width:108px;height:30px;background:#000;border-radius:20px;z-index:20;
+  }
+
+  /* status bar */
+  .statusbar{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:16px 30px 4px;font-size:14px;font-weight:600;letter-spacing:.2px;
+  }
+  .statusbar .icons{display:flex;gap:7px;align-items:center}
+  .statusbar svg{display:block;opacity:.92}
+
+  .screen{
+    height:768px;overflow-y:auto;overflow-x:hidden;
+    scrollbar-width:none;padding:6px 20px 100px;
+    scroll-behavior:smooth;
+  }
+  .screen::-webkit-scrollbar{display:none}
+
+  /* stagger entrance for sections */
+  .reveal{animation:up .6s cubic-bezier(.2,.7,.2,1) both}
+  .reveal:nth-child(1){animation-delay:.05s}
+  .reveal:nth-child(2){animation-delay:.1s}
+  .reveal:nth-child(3){animation-delay:.15s}
+  .reveal:nth-child(4){animation-delay:.2s}
+  .reveal:nth-child(5){animation-delay:.25s}
+  .reveal:nth-child(6){animation-delay:.3s}
+  .reveal:nth-child(7){animation-delay:.35s}
+  .reveal:nth-child(8){animation-delay:.4s}
+  @keyframes up{from{opacity:0;transform:translateY(16px)}}
+
+  /* ===== Header ===== */
+  .header{padding:14px 6px 4px;display:flex;justify-content:space-between;align-items:flex-start}
+  .greeting{font-size:13.5px;color:var(--text-dim);font-weight:500;letter-spacing:.2px}
+  .name{font-size:27px;font-weight:800;letter-spacing:-.6px;margin-top:3px}
+  .name span{background:linear-gradient(90deg,var(--gold-soft),var(--gold));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .avatar{
+    width:42px;height:42px;border-radius:50%;flex-shrink:0;
+    background:linear-gradient(135deg,#2b3c66,#1a2742);
+    border:1px solid rgba(255,255,255,.12);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:15px;color:var(--text-dim);
+  }
+
+  .streak{
+    margin-top:18px;display:flex;align-items:center;gap:15px;
+    background:linear-gradient(120deg, rgba(65,199,194,.16), rgba(224,184,74,.10));
+    border:1px solid rgba(65,199,194,.22);
+    border-radius:22px;padding:15px 17px;position:relative;overflow:hidden;
+  }
+  .streak::after{
+    content:"";position:absolute;right:-20px;top:-30px;width:120px;height:120px;
+    background:radial-gradient(circle,rgba(224,184,74,.18),transparent 70%);
+  }
+  .streak-ico{
+    width:48px;height:48px;border-radius:16px;flex-shrink:0;
+    background:linear-gradient(135deg, var(--gold-soft), var(--gold));
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 8px 20px rgba(184,134,11,.4);
+  }
+  .streak-txt{position:relative}
+  .streak-txt .big{font-size:20px;font-weight:800;line-height:1;letter-spacing:-.3px}
+  .streak-txt .sub{font-size:12.5px;color:var(--text-dim);margin-top:5px;font-weight:500}
+
+  /* ===== Section label ===== */
+  .sec-label{
+    font-size:11.5px;text-transform:uppercase;letter-spacing:1.6px;
+    color:var(--text-faint);font-weight:700;margin:26px 6px 13px;
+  }
+
+  /* ===== Glass card ===== */
+  .card{
+    background:linear-gradient(180deg, var(--glass), var(--glass-2));
+    border:1px solid var(--line);
+    border-radius:26px;padding:20px;
+    box-shadow:0 16px 40px -12px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.05);
+    backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  }
+
+  /* Last night */
+  .ln-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+  .ln-top .label{font-size:12.5px;color:var(--text-dim);font-weight:500}
+  .ln-top .score{
+    font-size:11.5px;font-weight:700;color:var(--good);letter-spacing:.2px;
+    background:rgba(63,209,138,.12);padding:5px 11px;border-radius:20px;
+    border:1px solid rgba(63,209,138,.28);
+  }
+
+  .ln-main{display:flex;align-items:center;gap:20px}
+
+  .ring-wrap{position:relative;width:120px;height:120px;flex-shrink:0}
+  .ring-wrap .center{
+    position:absolute;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;
+  }
+  .ring-wrap .center .h{font-size:22px;font-weight:800;line-height:1;letter-spacing:-.8px}
+  .ring-wrap .center .l{font-size:9.5px;color:var(--text-dim);margin-top:4px;letter-spacing:1.2px;font-weight:600}
+
+  .ln-stats{flex:1;display:flex;flex-direction:column;gap:14px}
+  .stat .row{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:7px;align-items:baseline}
+  .stat .row .k{color:var(--text-dim);font-weight:500}
+  .stat .row .v{font-weight:700;font-size:13px}
+  .stat .row .v small{color:var(--text-faint);font-weight:500;font-size:11px}
+  .bar{height:7px;background:rgba(255,255,255,.07);border-radius:6px;overflow:hidden}
+  .bar i{display:block;height:100%;border-radius:6px;width:0;animation:fill 1.1s cubic-bezier(.3,.8,.3,1) forwards .3s}
+  .bar.deep i{background:linear-gradient(90deg,var(--teal),var(--teal-bright));--w:62%}
+  .bar.rem i{background:linear-gradient(90deg,#5E78C8,#8AA6EE);--w:70%}
+  @keyframes fill{to{width:var(--w)}}
+
+  .ln-vitals{display:flex;gap:10px;margin-top:20px;padding-top:18px;border-top:1px solid var(--line)}
+  .vital{flex:1;text-align:center}
+  .vital .v{font-size:20px;font-weight:800;letter-spacing:-.4px;display:flex;align-items:baseline;justify-content:center;gap:2px}
+  .vital .v small{font-size:11px;color:var(--text-faint);font-weight:600}
+  .vital .v .up{align-self:center;margin-bottom:2px}
+  .vital .k{font-size:11px;color:var(--text-dim);margin-top:4px;letter-spacing:.3px;font-weight:500}
+
+  /* ===== 7-day trend ===== */
+  .trend{padding:20px 18px 18px}
+  .trend-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:18px}
+  .trend-head .avg{font-size:12px;color:var(--text-dim);font-weight:500}
+  .trend-head .avg b{color:var(--text);font-size:13px;font-weight:700}
+  .bars{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;height:134px}
+  .day{flex:1;display:flex;flex-direction:column;align-items:center;gap:9px;height:100%;justify-content:flex-end}
+  .day .col{
+    width:100%;max-width:26px;border-radius:8px;position:relative;
+    background:linear-gradient(180deg,rgba(124,147,230,.5),rgba(124,147,230,.18));
+    height:0;animation:grow 1s cubic-bezier(.3,.8,.3,1) forwards;
+  }
+  @keyframes grow{to{height:var(--h)}}
+  .day.grounded .col{
+    background:linear-gradient(180deg,var(--teal-bright),var(--teal));
+    box-shadow:0 0 18px rgba(65,199,194,.35);
+  }
+  .day .dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.16)}
+  .day.grounded .dot{background:var(--gold-soft);box-shadow:0 0 9px var(--gold-soft)}
+  .day .lbl{font-size:11px;color:var(--text-faint);font-weight:600}
+  .day.grounded .lbl{color:var(--text-dim)}
+
+  .legend{display:flex;gap:20px;margin-top:18px;justify-content:center;font-size:11.5px;color:var(--text-dim);font-weight:500}
+  .legend .item{display:flex;align-items:center;gap:7px}
+  .legend .swatch{width:11px;height:11px;border-radius:4px}
+  .legend .swatch.g{background:var(--teal-bright)}
+  .legend .swatch.n{background:rgba(124,147,230,.42)}
+
+  /* ===== Insight ===== */
+  .insight{
+    background:linear-gradient(135deg, rgba(46,125,123,.28), rgba(184,134,11,.16));
+    border:1px solid rgba(65,199,194,.32);
+    border-radius:26px;padding:20px;position:relative;overflow:hidden;
+    box-shadow:0 16px 40px -14px rgba(0,0,0,.5);
+  }
+  .insight::before{
+    content:"";position:absolute;right:-40px;top:-40px;width:150px;height:150px;
+    background:radial-gradient(circle, rgba(224,184,74,.28), transparent 70%);
+  }
+  .insight .tag{
+    display:inline-flex;align-items:center;gap:7px;font-size:10.5px;font-weight:700;
+    letter-spacing:1px;text-transform:uppercase;color:var(--gold-soft);margin-bottom:12px;
+  }
+  .insight p{font-size:16px;line-height:1.55;font-weight:500;position:relative}
+  .insight p b{color:var(--gold-soft);font-weight:700}
+  .insight .meta{font-size:11.5px;color:var(--text-dim);margin-top:14px;position:relative;font-weight:500;display:flex;align-items:center;gap:6px}
+
+  /* ===== Tonight / IoT ===== */
+  .tonight{display:flex;align-items:center;gap:15px}
+  .moon{
+    width:46px;height:46px;border-radius:15px;flex-shrink:0;
+    background:linear-gradient(135deg,#2b3c66,#19233f);
+    border:1px solid rgba(255,255,255,.09);
+    display:flex;align-items:center;justify-content:center;color:var(--indigo);
+  }
+  .tonight .t{flex:1}
+  .tonight .t .h{font-size:14.5px;font-weight:700;letter-spacing:-.2px}
+  .tonight .t .s{font-size:12.5px;color:var(--text-dim);margin-top:4px;font-weight:500}
+  .tonight .time{font-size:15px;font-weight:800;color:var(--teal-bright);letter-spacing:-.3px}
+
+  .divider{height:1px;background:var(--line);margin:18px 0}
+
+  .iot{display:flex;align-items:center;gap:15px}
+  .iot .sensor{
+    width:46px;height:46px;border-radius:15px;flex-shrink:0;
+    background:linear-gradient(135deg,rgba(63,209,138,.16),rgba(46,125,123,.10));
+    border:1px solid rgba(63,209,138,.3);
+    display:flex;align-items:center;justify-content:center;color:var(--good);
+  }
+  .iot .t{flex:1}
+  .iot .t .h{font-size:14.5px;font-weight:700;display:flex;align-items:center;gap:9px;letter-spacing:-.2px}
+  .iot .t .h .pulse{
+    width:8px;height:8px;border-radius:50%;background:var(--good);
+    box-shadow:0 0 0 0 rgba(63,209,138,.6);animation:pulse 2s infinite;
+  }
+  .iot .t .s{font-size:12.5px;color:var(--text-dim);margin-top:4px;font-weight:500}
+  .iot .t .s b{color:var(--good);font-weight:600}
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(63,209,138,.5)}
+    70%{box-shadow:0 0 0 9px rgba(63,209,138,0)}
+    100%{box-shadow:0 0 0 0 rgba(63,209,138,0)}
+  }
+
+  .switch{position:relative;width:50px;height:30px;flex-shrink:0;cursor:pointer}
+  .switch input{opacity:0;width:0;height:0;position:absolute}
+  .slider{position:absolute;inset:0;border-radius:30px;background:rgba(255,255,255,.13);transition:.3s cubic-bezier(.3,.8,.3,1)}
+  .slider::before{
+    content:"";position:absolute;height:24px;width:24px;left:3px;top:3px;
+    background:#fff;border-radius:50%;transition:.3s cubic-bezier(.3,.8,.3,1);box-shadow:0 2px 6px rgba(0,0,0,.35);
+  }
+  .switch input:checked + .slider{background:linear-gradient(135deg,var(--good),var(--teal))}
+  .switch input:checked + .slider::before{transform:translateX(20px)}
+
+  .iot-status{
+    font-size:11.5px;color:var(--text-dim);margin-top:14px;font-weight:500;
+    display:flex;align-items:center;gap:9px;padding-left:2px;transition:opacity .25s;
+  }
+  .iot-status .conduct{display:flex;gap:3px;align-items:flex-end;height:14px}
+  .iot-status .conduct i{width:4px;border-radius:2px;background:var(--good)}
+  .iot-status .conduct i:nth-child(1){height:6px;opacity:.9}
+  .iot-status .conduct i:nth-child(2){height:9px;opacity:.9}
+  .iot-status .conduct i:nth-child(3){height:12px;opacity:.9}
+  .iot-status .conduct i:nth-child(4){height:14px;opacity:.45}
+  .iot-status .conduct i:nth-child(5){height:14px;opacity:.25}
+
+  /* ===== Bottom tab bar ===== */
+  .tabbar{
+    position:absolute;left:0;right:0;bottom:0;z-index:15;
+    display:flex;justify-content:space-around;align-items:center;
+    padding:12px 14px 26px;
+    background:linear-gradient(180deg, rgba(10,17,32,0), rgba(8,12,22,.92) 38%);
+    backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+    border-top:1px solid rgba(255,255,255,.05);
+  }
+  .tab{
+    display:flex;flex-direction:column;align-items:center;gap:5px;
+    color:var(--text-faint);font-size:10px;font-weight:600;letter-spacing:.2px;
+    cursor:pointer;transition:color .2s;flex:1;
+  }
+  .tab svg{display:block;stroke:currentColor}
+  .tab.active{color:var(--teal-bright)}
+  .tab.active svg{filter:drop-shadow(0 0 7px rgba(65,199,194,.5))}
+  .tab:not(.active):hover{color:var(--text-dim)}
+
+  /* ===== Footer ===== */
+  .footer{text-align:center;font-size:11px;color:var(--text-faint);margin-top:28px;padding:0 18px;line-height:1.6;font-weight:500}
+  .footer .logo{font-weight:800;letter-spacing:2px;color:var(--text-dim);font-size:11.5px;margin-bottom:7px}
+  .footer .logo span{color:var(--gold-soft)}
+</style>
+</head>
+<body>
+  <div class="phone">
+    <div class="island"></div>
+    <div class="statusbar">
+      <span>9:41</span>
+      <div class="icons">
+        <!-- signal -->
+        <svg width="18" height="12" viewBox="0 0 18 12" fill="none"><rect x="0" y="8" width="3" height="4" rx="1" fill="#F2F6FC"/><rect x="5" y="5" width="3" height="7" rx="1" fill="#F2F6FC"/><rect x="10" y="2.5" width="3" height="9.5" rx="1" fill="#F2F6FC"/><rect x="15" y="0" width="3" height="12" rx="1" fill="#F2F6FC" opacity=".4"/></svg>
+        <!-- wifi -->
+        <svg width="17" height="12" viewBox="0 0 17 12" fill="none"><path d="M8.5 11.2l2-2.4a3 3 0 00-4 0l2 2.4z" fill="#F2F6FC"/><path d="M3.6 5.5a7.5 7.5 0 019.8 0" stroke="#F2F6FC" stroke-width="1.6" stroke-linecap="round"/><path d="M1.2 2.9a11 11 0 0114.6 0" stroke="#F2F6FC" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <!-- battery -->
+        <svg width="26" height="13" viewBox="0 0 26 13" fill="none"><rect x="1" y="1" width="22" height="11" rx="3" stroke="#F2F6FC" stroke-opacity=".5" stroke-width="1"/><rect x="2.5" y="2.5" width="16" height="8" rx="1.5" fill="#3FD18A"/><rect x="24" y="4.5" width="2" height="4" rx="1" fill="#F2F6FC" fill-opacity=".5"/></svg>
+      </div>
+    </div>
+
+    <div class="screen">
+
+      <!-- HEADER -->
+      <div class="header reveal">
+        <div>
+          <div class="greeting">Good morning</div>
+          <div class="name">Hi, <span>Bhavesh</span></div>
+        </div>
+        <div class="avatar">B</div>
+      </div>
+
+      <div class="streak reveal">
+        <div class="streak-ico">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M21 12.8A8.5 8.5 0 1111.2 3a6.5 6.5 0 009.8 9.8z" fill="#fff" fill-opacity=".95"/></svg>
+        </div>
+        <div class="streak-txt">
+          <div class="big">12 nights grounded</div>
+          <div class="sub">Your longest streak yet — keep it going</div>
+        </div>
+      </div>
+
+      <!-- LAST NIGHT -->
+      <div class="reveal">
+        <div class="sec-label">Last night</div>
+        <div class="card">
+          <div class="ln-top">
+            <div class="label">Sun, Jun 16 · 11:18 PM – 7:02 AM</div>
+            <div class="score">Score 86</div>
+          </div>
+
+          <div class="ln-main">
+            <div class="ring-wrap">
+              <svg width="120" height="120" viewBox="0 0 120 120">
+                <defs>
+                  <linearGradient id="ringGrad" gradientUnits="userSpaceOnUse" x1="15" y1="105" x2="105" y2="15">
+                    <stop offset="0%" stop-color="#2E7D7B"/>
+                    <stop offset="55%" stop-color="#41C7C2"/>
+                    <stop offset="100%" stop-color="#7CE7E1"/>
+                  </linearGradient>
+                </defs>
+                <circle cx="60" cy="60" r="51" stroke="rgba(255,255,255,.11)" stroke-width="8" fill="none"/>
+                <circle cx="60" cy="60" r="51" stroke="url(#ringGrad)" stroke-width="8" fill="none"
+                  stroke-linecap="round" transform="rotate(-90 60 60)"
+                  stroke-dasharray="320.4" stroke-dashoffset="51.3"
+                  style="filter:drop-shadow(0 0 7px rgba(65,199,194,.55))">
+                  <animate attributeName="stroke-dashoffset" from="320.4" to="51.3" dur="1.2s" begin="0.2s" fill="freeze" calcMode="spline" keySplines="0.3 0.8 0.3 1" keyTimes="0;1"/>
+                </circle>
+              </svg>
+              <div class="center">
+                <div class="h">7h 44m</div>
+                <div class="l">ASLEEP</div>
+              </div>
+            </div>
+
+            <div class="ln-stats">
+              <div class="stat">
+                <div class="row"><span class="k">Deep sleep</span><span class="v">1h 38m <small>· 21%</small></span></div>
+                <div class="bar deep"><i></i></div>
+              </div>
+              <div class="stat">
+                <div class="row"><span class="k">REM sleep</span><span class="v">1h 52m <small>· 24%</small></span></div>
+                <div class="bar rem"><i></i></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="ln-vitals">
+            <div class="vital">
+              <div class="v">52<small>bpm</small></div>
+              <div class="k">Resting HR</div>
+            </div>
+            <div class="vital">
+              <div class="v">68<small>ms</small><svg class="up" width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M12 19V5M12 5l-6 6M12 5l6 6" stroke="#3FD18A" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <div class="k">HRV</div>
+            </div>
+            <div class="vital">
+              <div class="v">96<small>%</small></div>
+              <div class="k">SpO₂</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7-DAY TREND -->
+      <div class="reveal">
+        <div class="sec-label">7-day sleep trend</div>
+        <div class="card trend">
+          <div class="trend-head">
+            <div class="avg">Avg <b>7h 21m</b> / night</div>
+            <div class="avg">5 of 7 grounded</div>
+          </div>
+
+          <div class="bars">
+            <div class="day grounded"><div class="col" style="--h:72%"></div><div class="dot"></div><div class="lbl">Mon</div></div>
+            <div class="day"><div class="col" style="--h:54%"></div><div class="dot"></div><div class="lbl">Tue</div></div>
+            <div class="day grounded"><div class="col" style="--h:81%"></div><div class="dot"></div><div class="lbl">Wed</div></div>
+            <div class="day grounded"><div class="col" style="--h:77%"></div><div class="dot"></div><div class="lbl">Thu</div></div>
+            <div class="day"><div class="col" style="--h:48%"></div><div class="dot"></div><div class="lbl">Fri</div></div>
+            <div class="day grounded"><div class="col" style="--h:88%"></div><div class="dot"></div><div class="lbl">Sat</div></div>
+            <div class="day grounded"><div class="col" style="--h:84%"></div><div class="dot"></div><div class="lbl">Sun</div></div>
+          </div>
+
+          <div class="legend">
+            <div class="item"><span class="swatch g"></span> Grounded night</div>
+            <div class="item"><span class="swatch n"></span> Not grounded</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- INSIGHT -->
+      <div class="reveal">
+        <div class="sec-label">Your insights</div>
+        <div class="insight">
+          <div class="tag">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 2l2.2 6.3L20.5 10l-6.3 2.2L12 18.5 9.8 12.2 3.5 10l6.3-1.7L12 2z" fill="#E0B84A"/></svg>
+            AI Insight
+          </div>
+          <p>Over the last 30 days, you slept <b>~38 min longer</b> on nights you grounded — and your average HRV was <b>9 ms higher</b>.</p>
+          <div class="meta">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#9AA8C4" stroke-width="1.8"/><path d="M12 7v5l3 2" stroke="#9AA8C4" stroke-width="1.8" stroke-linecap="round"/></svg>
+            Based on 30 nights · updated this morning
+          </div>
+        </div>
+      </div>
+
+      <!-- TONIGHT -->
+      <div class="reveal">
+        <div class="sec-label">Tonight</div>
+        <div class="card">
+          <div class="tonight">
+            <div class="moon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 12a9 9 0 009 9 9 9 0 008-5 7 7 0 01-9-9 9 9 0 00-8 5z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="t">
+              <div class="h">Wind-down reminder</div>
+              <div class="s">Dim the lights and connect your grounding mat</div>
+            </div>
+            <div class="time">10:45 PM</div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="iot">
+            <div class="sensor">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M5 12a7 7 0 0114 0M8 12a4 4 0 018 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/></svg>
+            </div>
+            <div class="t">
+              <div class="h"><span class="pulse" id="pulse"></span> IoT sensor connected</div>
+              <div class="s" id="iotSub">Conductivity nominal · <b>good contact</b></div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="iotToggle" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="iot-status" id="iotStatus">
+            <span class="conduct"><i></i><i></i><i></i><i></i><i></i></span>
+            Signal strong — grounding mat reading 0.7 MΩ to earth
+          </div>
+        </div>
+      </div>
+
+      <!-- FOOTER -->
+      <div class="footer reveal">
+        <div class="logo">ELLECTRIFY<span> · </span>SLEEP</div>
+        Shows general wellness trends, not medical diagnosis.
+      </div>
+
+    </div>
+
+    <!-- BOTTOM TAB BAR -->
+    <nav class="tabbar">
+      <div class="tab active">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8M5 9.5V20a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V9.5"/></svg>
+        Home
+      </div>
+      <div class="tab">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5M4 19h16M8 16l4-5 3 3 5-7"/></svg>
+        Trends
+      </div>
+      <div class="tab">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2.5" width="14" height="19" rx="3"/><path d="M11 18h2"/></svg>
+        Device
+      </div>
+      <div class="tab">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/></svg>
+        Profile
+      </div>
+    </nav>
+  </div>
+
+<script>
+  (function(){
+    var toggle = document.getElementById('iotToggle');
+    var sub = document.getElementById('iotSub');
+    var status = document.getElementById('iotStatus');
+    var pulse = document.getElementById('pulse');
+
+    var tabs = document.querySelectorAll('.tab');
+    tabs.forEach(function(tab){
+      tab.addEventListener('click', function(){
+        tabs.forEach(function(t){ t.classList.remove('active'); });
+        tab.classList.add('active');
+      });
+    });
+
+    toggle.addEventListener('change', function(){
+      if (toggle.checked){
+        sub.innerHTML = 'Conductivity nominal · <b>good contact</b>';
+        status.style.opacity = '1';
+        pulse.style.background = 'var(--good)';
+        pulse.style.animation = 'pulse 2s infinite';
+      } else {
+        sub.innerHTML = 'Sensor offline · no contact detected';
+        status.style.opacity = '.35';
+        pulse.style.background = 'var(--text-faint)';
+        pulse.style.animation = 'none';
+      }
+    });
+  })();
+</script>
+</body>
+</html>
